@@ -10,7 +10,8 @@ import numpy as np
 from keras.layers import Input, LeakyReLU,Lambda,Subtract,Add, Conv2D,Dense,Flatten,Concatenate,Reshape,Dropout,Conv1D,BatchNormalization 
 from keras import initializers, Model
  
-from tensorflow.keras import backend as K
+from keras import backend as K
+
 
 
 

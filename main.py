@@ -19,6 +19,7 @@ from models.residual_learner import *
 import copy
 from pathlib import Path
 from tensorboard.plugins.hparams import api as hp
+from keras.utils.vis_utils import plot_model
 
 # function optimized to run on gpu 
 def reshape_2d(data):
@@ -129,7 +130,7 @@ def main(conf_file=0, iter_no=0):
     model_name =   config.exp.name.split('_')[0].upper()
     print(model_name)
    
-    if( model_name== 'MF_NBEA'):
+    if( model_name== "MFNBEA"):
         ### hyperparams for optimization 
         HP_NUM_UNITS = hp.HParam('num_units', hp.Discrete([32]))#, 64]))
         HP_NUM_IN_DIM = hp.HParam('num_in_dim', hp.Discrete([64]))
@@ -162,6 +163,7 @@ def main(conf_file=0, iter_no=0):
             )
             return model
 
+            plot_model(model, to_file='model_plot.png', show_shapes=True, show_layer_names=True)
 
     else:
         print("Not valid experiment name in the config")

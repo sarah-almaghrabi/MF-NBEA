@@ -1,0 +1,72 @@
+{
+    "exp": {
+        "name": "MFNBEA_NSW1",
+        "seed_value": 5061,
+        "config_n": 0
+    },
+    "comet_key": {
+        "comet_api_key": "",
+        "workspace": ""
+    },
+    "model": {
+        "learning_rate": 0.001,
+        "optimizer": "adam",
+        "maps_coding_size": 16
+    },
+    "trainer": {
+        "num_epochs": 1000,
+        "batch_size": 64,
+        "validation_split": 0.2,
+        "verbose_training": true
+    },
+    "callbacks": {
+        "checkpoint_monitor": "val_loss",
+        "checkpoint_mode": "min",
+        "patience": 50,
+        "checkpoint_save_best_only": true,
+        "checkpoint_save_weights_only": true,
+        "checkpoint_verbose": true,
+        "tensorboard_write_graph": true
+    },
+    "dataset_file": {
+        "file_name": "solar_30min_filtered_NSW1.csv",
+        "siteName": "NSW1",
+        "samplePerDay": 27
+    },
+    "model_data": {
+        "window": 2,
+        "horizon": 1,
+        "locations_n": 12,
+        "normlize": 0,
+        "use_power": true,
+        "use_weather": true,
+        "pca_comp": 0.9,
+        "correction_power_only": false,
+        "descriptive_data": false,
+        "model_power_only": false,
+        "model_weather_maps": true,
+        "model_weather_covariate": false,
+        "model_calendar_cov": false,
+        "stack_types": [
+            "trend",
+            "seasonality"
+        ],
+        "overlapping_window": false
+    },
+    "auto_corr": {
+        "cal": false
+    },
+    "features": [
+        "AlbedoDaily",
+        "CloudOpacity",
+        "AirTemp",
+        "Ghi",
+        "Dhi",
+        "Dni",
+        "Ebh",
+        "PrecipitableWater",
+        "RelativeHumidity",
+        "SurfacePressure",
+        "WindSpeed10m"
+    ]
+}
