@@ -41,22 +41,15 @@ class Trainer(BaseTrain):
         seed_value = self.config.exp.seed_value
         os.environ['PYTHONHASHSEED']=str(seed_value)
         os.environ['TF_GPU_ALLOCATOR']='cuda_malloc_async'
-
-        # Set `python` built-in pseudo-random generator at a fixed value
         random.seed(seed_value)
-        # Set `tensorflow` pseudo-random generator at a fixed value
         tf.random.set_seed(seed_value)
 
-        # self.experiment.log_other("random seed", seed_value)
         
 
     def init_callbacks(self):
-        #checkpoint_filepath = os.path.join(self.config.callbacks.checkpoint_dir, '%s-{epoch:02d}.ckpt' % self.config.exp.name)
         checkpoint_filepath = os.path.join(self.config.callbacks.checkpoint_dir_autenc,   self.config.exp.name+ '.ckpt')
-        #checkpoint_filepath = os.path.join(self.config.callbacks.checkpoint_dir,   self.config.exp.name+ '.ckpt')
 
         checkpoint_dir = os.path.normpath(checkpoint_filepath)
-    #     latest = tf.train.latest_checkpoint(checkpoint_dir)
         
 
         self.callbacks.append(
@@ -94,15 +87,6 @@ class Trainer(BaseTrain):
         )
             
 
-        # if ( "comet_key" in self.config):
-        #     self.experiment.disable_mp()
-        #     self.experiment.log_parameters(self.config.model)
-        #     self.experiment.log_parameters(self.config.exp)
-        #     self.experiment.log_parameters(self.config.dataset_file)
-        #     self.experiment.log_parameters(self.config.model_data)
-        #     self.experiment.log_parameters(self.config.trainer)
-
-        #     self.callbacks.append(self.experiment.get_callback('keras'))
         return checkpoint_dir
 
     def train(self,plot = False):
@@ -139,16 +123,8 @@ class Trainer(BaseTrain):
         # self.experiment.set_model_graph( self.config.callbacks.tensorboard_write_graph )
 
         
-        # self.model.save(os.path.join(self.config.callbacks.checkpoint_dir, '%s-{epoch:02d}-{val_loss:.2f}.hdf5' % self.config.exp.name))
         print('training completed')
         self.model.load_weights(self.checkpoint_dir)
-
-    # def get_best_trained_model(self ):
-    #     checkpoint_filepath = os.path.join(self.config.callbacks.checkpoint_dir, '%s-{epoch:02d}.ckpt' % self.config.exp.name)
-    #     checkpoint_dir = os.path.dirname(checkpoint_filepath)
-    #     latest = tf.train.latest_checkpoint(checkpoint_dir)
-    #     print('latest:',latest)
-    #     return latest 
 
 
     session.close()

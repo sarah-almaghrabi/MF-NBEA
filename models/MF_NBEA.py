@@ -1,4 +1,5 @@
 
+from warnings import filters
 from base.base_model import BaseModel
  
 
@@ -46,25 +47,11 @@ class MF_NBEA(BaseModel):
 
 
 
-        
-
-
-
-        def custom_weights( shape,dtype=None):
-                    #kernel = pd.read_csv('/Users/sarahalmaghrabi/OneDrive - RMIT University/experiments/Multivariate_experiments/DL_with_autocorrection/ridge_coef.csv', index_col=0).values
-                    kernel = pd.read_csv('ridge_coef_lag_'+str(self.config.model_data.window)+'_' +self.config.dataset_file.siteName+'.csv').values
-                    # change value here
-                    kernel = K.variable(kernel)
-                    return kernel
-
-        def add_dim(data):
-            """Reshape the context vectors to 3D vector"""
-            return K.reshape(x=data, shape=(K.shape(data)[0], K.shape(data)[1], 1))
-
          
-        filters = units 
-        kernel_size=5 
-        
+        f2 = self.config.model.f2
+        f3 = self.config.model.f3
+        kernel_size= self.config.model.kernels
+        f4 = self.config.model.f4
         
         def flatten_first_dimentions(tensor_x, dim_to_flat):
             tensor_dim_len = len(tensor_x.get_shape())
@@ -145,31 +132,22 @@ class MF_NBEA(BaseModel):
 
         # concat_input =Concatenate( ) ([inputs2,inputs1])
 
-        ## Temporal Encoders 
+        ## Temporal Encoders with residual connections 
         ## extract features from power series 
         concat_input_ = power #weather #Concatenate( ) ([weather,power])
         random.seed(seed_value)
         seed_value = [random.randrange(1, 9999 ) for i in range(1)][0]
-        concat_input =   Conv2D(filters=filters, kernel_size= kernel_size , padding= "same" ,kernel_initializer=initializers.he_normal(seed=seed_value),  name= 'latent_power_features')(concat_input_) 
+        concat_input =   Conv2D(filters=f2, kernel_size= kernel_size , padding= "same" ,kernel_initializer=initializers.he_normal(seed=seed_value),  name= 'latent_power_features')(concat_input_) 
         concat_input = LeakyReLU()(concat_input)
         concat_input = BatchNormalization() (concat_input)
         ## residual connection for power 
         concat_input = Concatenate() ([concat_input,concat_input_])
         
-        ## extract features from calendar series 
-        random.seed(seed_value)
-        seed_value = [random.randrange(1, 9999 ) for i in range(1)][0]
-        calendar =  Conv1D(filters=filters, kernel_size= kernel_size , padding= "same" ,kernel_initializer=initializers.he_normal(seed=seed_value ), name= 'latent_calendar_features')(input4)
-        calendar =  LeakyReLU()(calendar)
-        calendar = BatchNormalization() (calendar)
-        ## residual connection for calendar
-        calendar = Concatenate() ([calendar,input4])
-
 
         ## extract features from encoded map weather 
         random.seed(seed_value)
         seed_value = [random.randrange(1, 9999 ) for i in range(1)][0]
-        weather_ = Conv2D(filters=filters,  kernel_size=kernel_size, padding= "same",kernel_initializer=initializers.he_normal( seed=seed_value), name= 'latent_weather_features')(weather) 
+        weather_ = Conv2D(filters=f3,  kernel_size=kernel_size, padding= "same",kernel_initializer=initializers.he_normal( seed=seed_value), name= 'latent_weather_features')(weather) 
         weather_ = LeakyReLU()(weather_)
         weather_ = BatchNormalization() (weather_)
         seed_value = seed_value+1
@@ -187,38 +165,21 @@ class MF_NBEA(BaseModel):
             s4 = weather_.get_shape()[4]
             weather_ = Flatten()(weather_)
             weather_ = Reshape( (s1,s2*s3 *s4) , name = 'reshape_latent_maps')(weather_)
-        else:
-            s1 =weather_.get_shape()[1]  
-            s2 =weather_.get_shape()[2] 
-            s3 =weather_.get_shape()[3]
-            s4 = weather_.get_shape()[4]
-            weather_ = Flatten()(weather_)
-            weather_ = Reshape( (s1,s2,s3 *s4) ,name = 'reshape_latent_maps')(weather_)
-        
-
-
-
-
-        if not ovelapping : 
             
+        else:    
             #reshape the power to batch, steps,features 
             s1 =concat_input.get_shape()[1]  
             s2 =concat_input.get_shape()[2] 
             s3 =concat_input.get_shape()[3]
             concat_input = Reshape((s1*s2,s3))(concat_input)
+            print('weather_.get_shape()',weather_.get_shape())
 
-        #reshape the encoded maps to batch, steps,features  (if not use the latent features betwen days and lags )
-        # s1 =weather.get_shape()[1]  
-        # s2 =weather.get_shape()[2] 
-        # s3 =weather.get_shape()[3]
-        # s4 = weather.get_shape()[4]
+            s1 =weather_.get_shape()[1]  
+            s2 =weather_.get_shape()[2] 
+            s3 =weather_.get_shape()[3]
+            s4 =weather_.get_shape()[4]
+            weather_ = Reshape((s1*s2,s3*s4))(weather_)
 
-        #reshape the latent features of encoded maps to batch, steps,features  
-        print('weather_.get_shape()',weather_.get_shape())
-        
-
-        if not ovelapping :  
-            weather_ =  flatten_first_dimentions(tensor_x=weather_, dim_to_flat=[1,2])
 
         print('weather_.get_shape()',weather_.get_shape())
 
@@ -249,135 +210,35 @@ class MF_NBEA(BaseModel):
         #    weather_cov =   Conv2D(filters=filters, kernel_size= kernel_size , padding= "same" ,kernel_initializer=initializers.he_normal(seed=seed_value), name= 'latent_weather_cov_features')(weather_cov) 
         #weather_cov = LeakyReLU()(weather_cov)
         #weather_cov = BatchNormalization() (weather_cov)
-        #weather_cov = Concatenate() ([weather_cov,inputs3])
-        
-        if weather_maps and not weather_covariate :
-            print('concat_input > ',concat_input.get_shape())  #power
-            print('weather_ > ',weather_.get_shape()) #maped 
-            
-            concat_input  = Concatenate( ) ([concat_input,weather_])
-            print('concat_input > ',concat_input.get_shape())  #power
-
-            concat_input = Conv1D(filters=filters,  kernel_size=kernel_size, padding= "same",kernel_initializer=initializers.he_normal( seed=seed_value), name= 'reduce_dim_of_power_wether_maps1')(concat_input) 
-            print('concat_input > ',concat_input.get_shape())  #power
-
-            concat_input = Conv1D(filters=filters//2,  kernel_size=kernel_size, padding= "same",kernel_initializer=initializers.he_normal( seed=seed_value), name= 'reduce_dim_of_power_wether_maps2')(concat_input) 
-
-            #concat_input  = Flatten( ) (concat_input)
 
 
-            print(concat_input.get_shape())
+        concat_input  = Concatenate( ) ([concat_input,weather_])
+         
+        concat_input = Conv1D(filters=f4,  kernel_size=kernel_size, padding= "same",kernel_initializer=initializers.he_normal( seed=seed_value), name= 'reduce_dim_of_power_wether_maps1')(concat_input) 
+        print('concat_input > ',concat_input.get_shape())  #power
 
-        elif weather_covariate and not weather_maps: 
-            concat_input  = Concatenate( ) ([concat_input,weather_cov])
-        elif weather_maps and weather_covariate and not calendar_cov: 
-            concat_input  = Concatenate( ) ([concat_input,weather_cov,weather_])
-        elif weather_maps and weather_covariate and calendar_cov:
-            concat_input  = Concatenate( ) ([concat_input,weather_cov,weather_,calendar])
-
-        #print('concat_input >>',concat_input.get_shape())
-
-        ##flaten the last dimention and feeed it to a conv1D
+        concat_input = Conv1D(filters=f4//2,  kernel_size=kernel_size, padding= "same",kernel_initializer=initializers.he_normal( seed=seed_value), name= 'reduce_dim_of_power_wether_maps2')(concat_input) 
+        power_to_cocat = Flatten()(power)
+        power_to_cocat = Reshape( (stepsIn,1)) (power_to_cocat)
+        concat_input = Concatenate()([concat_input, power_to_cocat ])
 
 
-        # concat_input = Concatenate(axis=1) ([concat_input,concat_input_])
-        # in1 = Reshape( (self.config.model_data.window*self.config.dataset_file.samplePerDay , 1 )) (inputs1 ) 
-        # in2= Reshape( (self.config.model_data.window*self.config.dataset_file.samplePerDay , 12 )) (inputs2 ) 
 
-        # latentdim = hb.Choice(name='latentdim' ,values=[5, 4,3,2,10,15])
-        #produce latent features of power 
-
-
-        input_list.append(power)
-
-        input_list.append(weather)
-
-        use_power = self.config.model_data.use_power
-        use_weather = self.config.model_data.use_weather
-        
-        if use_power and  not use_weather : 
-            full_inputs = power
-        elif not use_power and   use_weather : 
-            full_inputs = weather
-        elif use_power and use_weather: 
-            full_inputs = concat_input 
-        else: 
-            print('sorry features to use are not decided !')
-            exit()
-        
-        print('full_inputs',full_inputs.get_shape())
+        print('full_inputs',concat_input.get_shape())
         seed_value = seed_value+1
-        layer = Dropout(.3, seed = seed_value)(full_inputs )
+        layer = Dropout(.3, seed = seed_value)(concat_input )
  
         unit_fc = stepsIn 
-        #to use only power with NBEATS
-        if model_power_only:
-            exxxo_dim = 0
-            if  ovelapping:
-                layer = inputs1
-            else:
-                s1 =inputs1.get_shape()[1]  
-                s2 =inputs1.get_shape()[2] 
-                s3 =inputs1.get_shape()[3]
-                layer = Reshape((s1*s2,1),name= 'input_variable' )(inputs1)
-                 
-
-            #layer = BatchNormalization()(layer)
-        elif  weather_covariate and not weather_maps and not calendar_cov:  
-            s1 =inputs3.get_shape()[1]  
-            s2 =inputs3.get_shape()[2] 
-            s3 =inputs3.get_shape()[3]
-
-            layer_exo = Reshape((s1*s2,s3),name= 'input_exo_cov' )(inputs3)
-            layer_exo = BatchNormalization()(layer_exo)
-
-            s1 =inputs1.get_shape()[1]  
-            s2 =inputs1.get_shape()[2] 
-            s3 =inputs1.get_shape()[3]
-            layer = Reshape((s1*s2,1),name= 'input_power' )(inputs1)
-            layer = BatchNormalization()(layer)
-        else: #power and weathre maps
-
-            #s3 =layer.get_shape()[3]
-            print(layer.get_shape())
-
-            layer_exo = layer
-            exxxo_dim = layer_exo.get_shape()[-1]
-            s1 =inputs1.get_shape()[1]  
-            s2 =inputs1.get_shape()[2] 
-            #s3 =inputs1.get_shape()[3]
-            layer = Reshape((s1*s2,1),name= 'input_power' )(inputs1)
-            # random.seed(seed_value)
-            # seed_value = [random.randrange(1, 9999 ) for i in range(1)][0] 
-
-            # stepsIn= layer.get_shape()[1]
-            # layer = Reshape((stepsIn,1),name= 'input_variable' )(layer)
-
-            #if ovelapping: 
-            #     #layer = Flatten()(layer)
-            #     stepsIn= layer.get_shape()[1]
-            #     #layer = Dense(stepsIn, activation='linear' ,  kernel_initializer=initializers.HeNormal(seed=seed_value) )(layer)
-            #     layer = Reshape((stepsIn,1),name= 'input_variable' )(layer)
-
-            #else:
-            #    s1 =layer.get_shape()[1]  
-            #    s2 =layer.get_shape()[2] 
-            #    layer = Flatten()(layer)
-
-            #    layer = Dense(s1*s2, activation='linear' ,  kernel_initializer=initializers.HeNormal(seed=seed_value))(layer)
-            #    layer = Reshape((s1*s2,1),name= 'input_variable' )(layer)
-
-
+ 
+ 
+        layer = Flatten()(layer)
+        layer = Dense(stepsIn, activation='relu' ,  kernel_initializer=initializers.HeNormal(seed=seed_value) )(layer)
+        layer = Reshape((stepsIn,1),name= 'input_variable' )(layer)
 
         GENERIC_BLOCK = 'generic'
         TREND_BLOCK = 'trend'
         SEASONALITY_BLOCK = 'seasonality'
-        #output  = Dense(27)(layer)
-        # output = Reshape((stepsOut,1),name= 'input_variable' )(output)
-        # self.model = Model([inputs1, inputs2,inputs3,input4], output, name=self._FORECAST)
-
-        # '''
-       
+        
         '''
         The following code is from: https://github.com/philipperemy/n-beats
         '''    
@@ -391,11 +252,7 @@ class MF_NBEA(BaseModel):
         self.input_dim = layer.get_shape()[-1]# input_dim
         self.input_shape = (self.backcast_length, self.input_dim)
 
-        if weather_covariate and not weather_maps and not calendar_cov: 
-            self.exo_dim = int(self.config.model_data.locations_n) * len(self.config.features) # exo_dim
-            
-        else:
-            self.exo_dim  = exxxo_dim #0 
+        self.exo_dim  = 0 
         self.exo_shape = (self.backcast_length, self.exo_dim)
         self.output_shape = (self.forecast_length, self.input_dim)
         self.weights = {}
@@ -408,18 +265,10 @@ class MF_NBEA(BaseModel):
         for k in range(self.input_dim):
             x_[k] = Lambda(lambda z: z[..., k])(x)
         e_ = {}
-        if self.has_exog():
-            #e = Input(shape=self.exo_shape, name='exos_variables')
-            e =layer_exo 
-            exo_filters= 32
-            e =  Conv1D(filters=exo_filters, kernel_size= kernel_size , padding= "same" ,kernel_initializer=initializers.he_normal( seed=seed_value), name= 'latent_cov_features')(e)
-            self.exo_dim = exo_filters
-            #e = BatchNormalization()(e)
 
-            for k in range(self.exo_dim):
-                e_[k] = Lambda(lambda z: z[..., k])(e)
-        else:
-            e = None
+
+
+        e = None
         y_ = {}
 
         for stack_id in range(len(self.stack_types)):
@@ -444,14 +293,10 @@ class MF_NBEA(BaseModel):
             y_ = y_[0]
             x_ = x_[0]
 
-        if self.has_exog():
-            n_beats_forecast = Model([inputs1, inputs2,inputs3,input4], y_, name=self._FORECAST)
-            # n_beats_backcast = Model(x, x_, name=self._BACKCAST)
-            n_beats_backcast = Model([inputs1, inputs2,inputs3,input4,x_ ], name=self._BACKCAST)
-        else:  
-            n_beats_forecast = Model([inputs1, inputs2,inputs3,input4], y_, name=self._FORECAST)
-            # n_beats_backcast = Model(x, x_, name=self._BACKCAST)
-            n_beats_backcast = Model([inputs1, inputs2,inputs3,input4,x_ ], name=self._BACKCAST)
+
+        n_beats_forecast = Model([inputs1, inputs2,inputs3,input4], y_, name=self._FORECAST)
+        # n_beats_backcast = Model(x, x_, name=self._BACKCAST)
+        n_beats_backcast = Model([inputs1, inputs2,inputs3,input4,x_ ], name=self._BACKCAST)
 
         self.models = {model.name: model for model in [n_beats_backcast, n_beats_forecast]}
         self.cast_type = self._FORECAST

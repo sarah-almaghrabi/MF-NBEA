@@ -9,7 +9,7 @@ This file is used to create all required settings and hyperparameters for MF-NBE
 samplePerDay = 27
 overlapping = False  #if want to use overlapping window or siliding window 
 
-window = [  2]#1,2,3 ,4,5,6,7]
+window = [  1,2,3 ,4,5,6,7]
 h = 1
 if overlapping :
     for item in range(len(window)) :
@@ -20,7 +20,7 @@ if overlapping :
 
 batch_size= [64]#,128]
 random.seed(444)
-seeds =  [random.randrange(1, 9999 ) for i in range(1)]
+seeds =  [random.randrange(1, 9999 ) for i in range(10)]
 for stacktypes in ['I']:#,'I']: 
 
     if stacktypes =='G':
@@ -45,7 +45,7 @@ for stacktypes in ['I']:#,'I']:
 
                   ]
 
-    datasets= [("NSW1","solar_30min_filtered_NSW1.csv", 12)  ]# , ("QLD1","solar_30min_filtered_QLD1.csv",17)]
+    datasets= [("NSW1","solar_30min_filtered_NSW1.csv", 12)   , ("QLD1","solar_30min_filtered_QLD1.csv",17)]
     
     
     configurations=0
@@ -72,7 +72,11 @@ for stacktypes in ['I']:#,'I']:
                             "model":{
                                 "learning_rate": 0.001,
                                 "optimizer": "adam",
-                                "maps_coding_size": 16
+                                "maps_coding_size": 8,
+                                "f2": 8, 
+                                "f3":16,
+                                "f4":8,
+                                "kernels":5
 
                             },
                             "trainer":{
@@ -96,7 +100,6 @@ for stacktypes in ['I']:#,'I']:
                                 "samplePerDay"  : samplePerDay
                                 },
                             "model_data" :  {
-
                                 "window" : w,
                                 "horizon" :h,
                                 "locations_n":dataset[2],
@@ -105,7 +108,6 @@ for stacktypes in ['I']:#,'I']:
                                 "normlize": 0,
                                 "use_power": True,
                                 "use_weather": True,
-                        
                                 "pca_comp": 0.9,
                                 "correction_power_only":False,
                                 "descriptive_data":False,

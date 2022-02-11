@@ -64,18 +64,18 @@ class AutoEncoder(BaseModel):
         if optimal_map_size == 4 : 
    
             x= input_imag
-            x = Conv3D(64, (5, 3, 3), data_format='channels_first', activation='relu', padding='same')(x)
+            x = Conv3D(self.config.model.maps_coding_size, (5, 3, 3), data_format='channels_first', activation='relu', padding='same')(x)
             x = MaxPooling3D((1, 2, 2), data_format='channels_first', padding='same')(x)
-            x = Conv3D(32, (5, 3, 3), data_format='channels_first', activation='relu', padding='same')(x)
+            x = Conv3D(self.config.model.maps_coding_size, (5, 3, 3), data_format='channels_first', activation='relu', padding='same')(x)
             x = MaxPooling3D((1, 2, 2), data_format='channels_first', padding='same')(x)
             x = Conv3D(self.config.model.maps_coding_size, (5, 3, 3), data_format='channels_first', activation='relu', padding='same')(x)
             encoded = MaxPooling3D((1, 2, 2), data_format='channels_first', padding='same', name='encoder')(x)
         
             x = Conv3D(self.config.model.maps_coding_size, (5, 3, 3), data_format='channels_first', activation='relu', padding='same')(encoded)
             x = UpSampling3D((1, 1, 1), data_format='channels_first')(x)
-            x = Conv3D(32, (5, 3, 3), data_format='channels_first', activation='relu', padding='same')(x)
+            x = Conv3D(self.config.model.maps_coding_size, (5, 3, 3), data_format='channels_first', activation='relu', padding='same')(x)
             x = UpSampling3D((1, 2, 2), data_format='channels_first')(x)
-            x = Conv3D(64, (5, 3, 3), data_format='channels_first', activation='relu', padding='same')(x)
+            x = Conv3D(self.config.model.maps_coding_size, (5, 3, 3), data_format='channels_first', activation='relu', padding='same')(x)
             x = UpSampling3D((1, 2, 2), data_format='channels_first')(x)
             decoded_out = Conv3D(n_wanted_features, (5, 3, 3), data_format='channels_first', activation='relu', padding='same')(x)
         
@@ -83,9 +83,9 @@ class AutoEncoder(BaseModel):
         elif optimal_map_size == 5:
             print("optimal_map_size",optimal_map_size)
             x= input_imag
-            x = Conv3D(64, (5, 3, 3), data_format='channels_first', activation='relu',kernel_initializer=initializers.he_normal(), padding='same')(x)
+            x = Conv3D(self.config.model.maps_coding_sizeding_size, (5, 3, 3), data_format='channels_first', activation='relu',kernel_initializer=initializers.he_normal(), padding='same')(x)
             x = MaxPooling3D((1, 2, 2), data_format='channels_first', padding='same')(x)
-            x = Conv3D(32, (5, 3, 3), data_format='channels_first', activation='relu', padding='same',kernel_initializer=initializers.he_normal())(x)
+            x = Conv3D(self.config.model.maps_coding_size, (5, 3, 3), data_format='channels_first', activation='relu', padding='same',kernel_initializer=initializers.he_normal())(x)
             x = MaxPooling3D((1, 2, 2), data_format='channels_first', padding='same')(x)
             x = Conv3D(self.config.model.maps_coding_size, (5, 3, 3), data_format='channels_first', activation='relu', padding='same',kernel_initializer=initializers.he_normal())(x)
             encoded = MaxPooling3D((1, 2, 2), data_format='channels_first', padding='same', name='encoder')(x)
@@ -94,12 +94,12 @@ class AutoEncoder(BaseModel):
             x = Conv3D(self.config.model.maps_coding_size, (5, 3, 3), data_format='channels_first', activation='relu', kernel_initializer=initializers.he_normal(),padding='same')(x)
             x = UpSampling3D((1, 2, 2), data_format='channels_first' )(x)
             x = Cropping3D(cropping=((0, 0), (1, 0), (1, 0)), data_format='channels_first')(x)  
-            x = Conv3D(32, (5, 3, 3), data_format='channels_first', activation='relu', padding='same',kernel_initializer=initializers.he_normal())(x)
+            x = Conv3D(self.config.model.maps_coding_size, (5, 3, 3), data_format='channels_first', activation='relu', padding='same',kernel_initializer=initializers.he_normal())(x)
             x = UpSampling3D((1, 2, 2), data_format='channels_first' )(x)
             x = Cropping3D(cropping=((0, 0), (1, 0), (1, 0)), data_format='channels_first')(x)  
         
         
-            x = Conv3D(64, (5, 3, 3), data_format='channels_first', activation='relu', padding='same',kernel_initializer=initializers.he_normal())(x)
+            x = Conv3D(self.config.model.maps_coding_size, (5, 3, 3), data_format='channels_first', activation='relu', padding='same',kernel_initializer=initializers.he_normal())(x)
             decoded_out = Conv3D(n_wanted_features, (5, 3, 3), data_format='channels_first', activation='relu', padding='same')(x)
 
          
