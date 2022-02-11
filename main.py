@@ -15,7 +15,7 @@ from utils.config import process_config
 from utils.dirs import create_dirs
 from utils.utils import get_args
 import numpy as np 
-from models_grid.ensemble_utils import *
+from models.residual_learner import *
 import copy
 from pathlib import Path
 from tensorboard.plugins.hparams import api as hp
