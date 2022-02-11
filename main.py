@@ -162,8 +162,9 @@ def main(conf_file=0, iter_no=0):
                 metrics=['mae']
             )
             return model
-
+            print('33333')
             plot_model(model, to_file='model_plot.png', show_shapes=True, show_layer_names=True)
+            exit()
 
     else:
         print("Not valid experiment name in the config")
