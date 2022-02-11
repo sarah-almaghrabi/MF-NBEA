@@ -1,6 +1,5 @@
 
 from base.base_model import BaseModel
-from keras.models import Sequential
  
 
 import pandas as pd
@@ -8,17 +7,12 @@ import os
 import random
 import tensorflow.compat.v1 as tf
 import numpy as np
-from keras.layers import Input,Embedding, Attention, LeakyReLU, Conv3D,MaxPooling3D,Lambda,Subtract,Add, Conv2D,Dense,Flatten,Concatenate,AveragePooling2D,TimeDistributed, RepeatVector,Reshape,Dropout,Activation  ,ConvLSTM2D,Conv1D,MaxPooling2D,LSTM,BatchNormalization, GlobalAveragePooling2D,GlobalMaxPooling2D, AveragePooling1D
+from keras.layers import Input, LeakyReLU,Lambda,Subtract,Add, Conv2D,Dense,Flatten,Concatenate,Reshape,Dropout,Conv1D,BatchNormalization 
 from keras import initializers, Model
-from tensorflow.keras.regularizers import l2
-
+ 
 from tensorflow.keras import backend as K
 from keras import layers as L
 
-import random
-import numpy as np
-from keras.utils.vis_utils import plot_model
-from tensorflow.keras.constraints import non_neg, Constraint
 
 
 
