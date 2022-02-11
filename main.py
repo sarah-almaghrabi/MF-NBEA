@@ -19,9 +19,7 @@ from models.residual_learner import *
 import copy
 from pathlib import Path
 from tensorboard.plugins.hparams import api as hp
-from keras.utils.vis_utils import plot_model
 
-# function optimized to run on gpu 
 def reshape_2d(data):
     if len( data.shape)  == 4:                
         data = data.reshape(data.shape[0],data.shape[1]*data.shape[2]*data.shape[3])
@@ -161,7 +159,6 @@ def main(conf_file=0, iter_no=0):
                 optimizer=config.model.optimizer,
                 metrics=['mae']
             )
-            plot_model(model, to_file='model_plot.png', show_shapes=True, show_layer_names=True)
             
             return model
 
@@ -201,7 +198,7 @@ def main(conf_file=0, iter_no=0):
         session_index += 1
         trainer = trainers.trainer.Trainer(
                 model= call_existing_code( 
-                    units=selected_params['num_units'],
+                   units=selected_params['num_units'],
                    in_dim = selected_params['num_in_dim'],
                    out_dim = selected_params['num_out_dim'] ,
                    nb_blocks_per_stack =selected_params['nb_blocks_per_stack'] ,

@@ -23,12 +23,7 @@ class MF_NBEA(BaseModel):
 
 
     def __init__(self, config , experiment,units ,in_dim,out_dim , nb_blocks_per_stack=1,thetas_dim=4, nbeats_units=128 ,nb_harmonics = 8  ):
-        model_power_only = config.model_data.model_power_only
-        weather_maps = config.model_data.model_weather_maps
-        weather_covariate = config.model_data.model_weather_covariate
-        calendar_cov = config.model_data.model_calendar_cov
         
-
         self.experiment = experiment
 
         super(MF_NBEA, self).__init__(config)
@@ -53,18 +48,6 @@ class MF_NBEA(BaseModel):
         kernel_size= self.config.model.kernels
         f4 = self.config.model.f4
         
-        def flatten_first_dimentions(tensor_x, dim_to_flat):
-            tensor_dim_len = len(tensor_x.get_shape())
-            dims = np.zeros( shape= (tensor_dim_len)) #skip the batches dim
-            for dim in range(1,tensor_dim_len): #skip the batches dim
-                dims[dim] = tensor_x.get_shape()[dim]
-            print(dims)
-            new_shape = [ int(np.product(dims[dim_to_flat]))   ] 
-            for rest_dim in dims[dim_to_flat[-1]+1:]:
-                new_shape.append( int(rest_dim))
-            print('new_shape:',new_shape)
-            tensor_x= Reshape(new_shape)(tensor_x)
-            return tensor_x
 
         ''' OVERLAPPING WINDOW '''
         #aggregated pv 
@@ -92,11 +75,6 @@ class MF_NBEA(BaseModel):
 
             #covariate representaion of exogenous data 
             inputs3 = Input(shape=( self.config.model_data.window, int(self.config.model_data.locations_n) * len(self.config.features)   )) #weather cov
-
-            # if use mean values of features 
-            # inputs2 = Input(shape=(self.config.model_data.window,self.config.dataset_file.samplePerDay, n_wanted_features )) #weather 
-            # inputs2 = Input(shape=(self.config.model_data.window,self.config.dataset_file.samplePerDay, 1 )) #weather 
-
             input4 =  Input(shape=(self.config.model_data.window, 5 )) #calendar 
 
         else: 
@@ -123,18 +101,14 @@ class MF_NBEA(BaseModel):
 
 
 
-        input_list = []
         power = inputs1
         power = BatchNormalization()(power)
         weather = inputs2
         weather = BatchNormalization()(weather)
 
-
-        # concat_input =Concatenate( ) ([inputs2,inputs1])
-
         ## Temporal Encoders with residual connections 
         ## extract features from power series 
-        concat_input_ = power #weather #Concatenate( ) ([weather,power])
+        concat_input_ = power 
         random.seed(seed_value)
         seed_value = [random.randrange(1, 9999 ) for i in range(1)][0]
         concat_input =   Conv2D(filters=f2, kernel_size= kernel_size , padding= "same" ,kernel_initializer=initializers.he_normal(seed=seed_value),  name= 'latent_power_features')(concat_input_) 
@@ -154,7 +128,6 @@ class MF_NBEA(BaseModel):
         weather_ = Dropout(.15,seed =seed_value ) (weather_)
         ## residual features for encoded map weather 
         weather_ = Concatenate() ([weather_,weather])
-        print('\n\n\n\n\n',weather_.get_shape())
 
 
         # 
@@ -181,70 +154,29 @@ class MF_NBEA(BaseModel):
             weather_ = Reshape((s1*s2,s3*s4))(weather_)
 
 
-        print('weather_.get_shape()',weather_.get_shape())
-
-        #random.seed(seed_value)
-        #seed_value = [random.randrange(1, 9999 ) for i in range(1)][0]        
-        #if  ovelapping:
-        #    weather_ = Conv1D(filters=filters, kernel_regularizer=l2(), kernel_size=kernel_size , padding= "same",kernel_initializer=initializers.he_normal(seed=seed_value), name= 'latent_weather_features2d')(weather_) 
-        #else:
-        #    weather_ = Conv2D(filters=filters, kernel_regularizer=l2(), kernel_size=kernel_size , padding= "same",kernel_initializer=initializers.he_normal(seed=seed_value), name= 'latent_weather_features2d')(weather_) 
-                   
-
-        #weather_ = LeakyReLU()(weather_)
-        #seed_value = seed_value+1
-        #weather_ = Dropout(.15, seed=seed_value) (weather_)
-        #weather_ = BatchNormalization() (weather_)
-
-        
-        
-        
-        #random.seed(seed_value)
-        #seed_value = [random.randrange(1, 9999 ) for i in range(1)][0] 
-        
-        #weather_cov = inputs3
-        
-        #if  ovelapping:
-        #    weather_cov =   Conv1D(filters=filters, kernel_size= kernel_size , padding= "same" ,kernel_initializer=initializers.he_normal(seed=seed_value), name= 'latent_weather_cov_features')(weather_cov) 
-        #else:
-        #    weather_cov =   Conv2D(filters=filters, kernel_size= kernel_size , padding= "same" ,kernel_initializer=initializers.he_normal(seed=seed_value), name= 'latent_weather_cov_features')(weather_cov) 
-        #weather_cov = LeakyReLU()(weather_cov)
-        #weather_cov = BatchNormalization() (weather_cov)
 
 
         concat_input  = Concatenate( ) ([concat_input,weather_])
-         
         concat_input = Conv1D(filters=f4,  kernel_size=kernel_size, padding= "same",kernel_initializer=initializers.he_normal( seed=seed_value), name= 'reduce_dim_of_power_wether_maps1')(concat_input) 
-        print('concat_input > ',concat_input.get_shape())  #power
-
         concat_input = Conv1D(filters=f4//2,  kernel_size=kernel_size, padding= "same",kernel_initializer=initializers.he_normal( seed=seed_value), name= 'reduce_dim_of_power_wether_maps2')(concat_input) 
         power_to_cocat = Flatten()(power)
         power_to_cocat = Reshape( (stepsIn,1)) (power_to_cocat)
         concat_input = Concatenate()([concat_input, power_to_cocat ])
 
-
-
-        print('full_inputs',concat_input.get_shape())
         seed_value = seed_value+1
-        layer = Dropout(.3, seed = seed_value)(concat_input )
- 
-        unit_fc = stepsIn 
- 
+        layer = Dropout(.3, seed = seed_value)(concat_input ) 
  
         layer = Flatten()(layer)
         layer = Dense(stepsIn, activation='relu' ,  kernel_initializer=initializers.HeNormal(seed=seed_value) )(layer)
         layer = Reshape((stepsIn,1),name= 'input_variable' )(layer)
 
-        GENERIC_BLOCK = 'generic'
-        TREND_BLOCK = 'trend'
-        SEASONALITY_BLOCK = 'seasonality'
         
         '''
-        The following code is from: https://github.com/philipperemy/n-beats
+        The following code is from: https://github.com/philipperemy/n-beats with some modifications 
         '''    
-        self.stack_types = tuple(self.config.model_data.stack_types)# (TREND_BLOCK,SEASONALITY_BLOCK)#(GENERIC_BLOCK,GENERIC_BLOCK)# stack_types
+        self.stack_types = tuple(self.config.model_data.stack_types)
         self.nb_blocks_per_stack = nb_blocks_per_stack
-        self.thetas_dim = tuple( [ thetas_dim for _ in range(len(self.stack_types))]) # (4, 8)# thetas_dim
+        self.thetas_dim = tuple( [ thetas_dim for _ in range(len(self.stack_types))]) 
         self.units = nbeats_units
         self.share_weights_in_stack = False  if 'generic' in self.stack_types else True  # share_weights_in_stack
         self.backcast_length = stepsIn #backcast_length
