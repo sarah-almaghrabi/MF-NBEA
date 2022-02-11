@@ -80,7 +80,7 @@ for stacktypes in ['I']:#,'I']:
 
                             },
                             "trainer":{
-                                "num_epochs": 1000,
+                                "num_epochs": 2000,
                                 "batch_size": batch,
                                 "validation_split":0.20,
                                 "verbose_training": True
