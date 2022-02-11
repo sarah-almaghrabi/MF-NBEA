@@ -11,12 +11,11 @@ from keras.layers import Input, LeakyReLU,Lambda,Subtract,Add, Conv2D,Dense,Flat
 from keras import initializers, Model
  
 from tensorflow.keras import backend as K
-from keras import layers as L
 
 
 
 
-class NN(BaseModel):
+class MF_NBEA(BaseModel):
     _BACKCAST = 'backcast'
     _FORECAST = 'forecast'
 
@@ -31,7 +30,7 @@ class NN(BaseModel):
         print('weather_covariate:',weather_covariate)
         self.experiment = experiment
 
-        super(NN, self).__init__(config)
+        super(MF_NBEA, self).__init__(config)
 
         ##Set Tensorflow to grow GPU memory consumption instead of grabbing all of it at once
         #K.clear_session()
@@ -275,77 +274,16 @@ class NN(BaseModel):
         if weather_maps and not weather_covariate :
             print('concat_input > ',concat_input.get_shape())  #power
             print('weather_ > ',weather_.get_shape()) #maped 
-            if False: 
-                #''' attention'''
-                #'''
-                # Variable-length int sequences.
-                learned_tensor =[] 
-                for step in range(stepsIn): 
-                    #print('step',step)
-                    query_input = concat_input[:,step]
-                    value_input = weather_[:,step]
-                    #query_input =  concat_input
-                    #value_input = weather_
-                    # Embedding lookup.
-                    token_embedding =  Embedding(input_dim= in_dim, output_dim=out_dim )
+            
+            concat_input  = Concatenate( ) ([concat_input,weather_])
+            print('concat_input > ',concat_input.get_shape())  #power
 
-                    # Query embeddings of shape [batch_size, Tq, dimension].
-                    query_embeddings = token_embedding(query_input)
-                    #query_embeddings = BatchNormalization() (query_embeddings)
+            concat_input = Conv1D(filters=filters,  kernel_size=kernel_size, padding= "same",kernel_initializer=initializers.he_normal( seed=seed_value), name= 'reduce_dim_of_power_wether_maps1')(concat_input) 
+            print('concat_input > ',concat_input.get_shape())  #power
 
-                    # Value embeddings of shape [batch_size, Tv, dimension].
-                    value_embeddings = token_embedding(value_input)
-                    #value_embeddings = BatchNormalization() (value_embeddings)
+            concat_input = Conv1D(filters=filters//2,  kernel_size=kernel_size, padding= "same",kernel_initializer=initializers.he_normal( seed=seed_value), name= 'reduce_dim_of_power_wether_maps2')(concat_input) 
 
-
-                    #print('query_embeddings > ',query_embeddings.get_shape())
-                    #print('value_embeddings > ',value_embeddings.get_shape())
-                    # CNN layer.
-                    cnn_layer =  Conv1D(
-                        filters=units,
-                        kernel_size=5,
-                        # Use 'same' padding so outputs have the same shape as inputs.
-                        padding='same')
-                    # Query encoding of shape [batch_size, Tq, filters].
-                    query_seq_encoding = cnn_layer(query_embeddings)
-                    #query_seq_encoding = BatchNormalization() (query_seq_encoding)
-
-                    # Value encoding of shape [batch_size, Tv, filters].
-                    value_seq_encoding = cnn_layer(value_embeddings)
-                    #value_seq_encoding = BatchNormalization() (value_seq_encoding)
-
-                    # Query-value attention of shape [batch_size, Tq, filters].
-                    query_value_attention_seq = Attention()(
-                        [query_seq_encoding, value_seq_encoding])
-
-                    # Reduce over the sequence axis to produce encodings of shape
-                    # [batch_size, filters].
-                    query_encoding = tf.keras.layers.GlobalAveragePooling1D()(
-                        query_seq_encoding)
-                    query_value_attention = tf.keras.layers.GlobalAveragePooling1D()(
-                        query_value_attention_seq)
-                    #print('query_seq_encoding > ',query_seq_encoding.get_shape())
-                    #print('query_value_attention_seq > ',query_value_attention_seq.get_shape())
-
-                    # Concatenate query and document encodings to produce a DNN input layer.
-                    learned_tensor.append( Concatenate()( [query_encoding, query_value_attention]) )
-                    
-                concat_input = Concatenate() (learned_tensor)
-                
-            #'''
-            # Add DNN layers, and create Model.
-            # ...
-            else: 
-
-                concat_input  = Concatenate( ) ([concat_input,weather_])
-                print('concat_input > ',concat_input.get_shape())  #power
-
-                concat_input = Conv1D(filters=filters,  kernel_size=kernel_size, padding= "same",kernel_initializer=initializers.he_normal( seed=seed_value), name= 'reduce_dim_of_power_wether_maps1')(concat_input) 
-                print('concat_input > ',concat_input.get_shape())  #power
-
-                concat_input = Conv1D(filters=filters//2,  kernel_size=kernel_size, padding= "same",kernel_initializer=initializers.he_normal( seed=seed_value), name= 'reduce_dim_of_power_wether_maps2')(concat_input) 
-
-                #concat_input  = Flatten( ) (concat_input)
+            #concat_input  = Flatten( ) (concat_input)
 
 
             print(concat_input.get_shape())
@@ -581,7 +519,6 @@ class NN(BaseModel):
         self.cast_type = self._FORECAST
 
 
-        #return self.model # NN(config=self.config, experiment=self.experiment).models
 
     def has_exog(self):
         # exo/exog is short for 'exogenous variable', i.e. any input
