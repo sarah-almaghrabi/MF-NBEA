@@ -14,7 +14,7 @@
 from tensorflow.keras.models import load_model
 from base.base_trainer import BaseTrain
 import os
-from keras.callbacks import ModelCheckpoint, TensorBoard, EarlyStopping,ReduceLROnPlateau
+from keras.callbacks import ModelCheckpoint, TensorBoard, EarlyStopping,ReduceLROnPlateau,LearningRateScheduler
 import pandas as pd
 import matplotlib.pyplot as plt
 from tensorboard.plugins.hparams import api as hp
@@ -112,6 +112,10 @@ class Trainer(BaseTrain):
         )
                     
 
+        self.callbacks.append
+        (
+            LearningRateScheduler(schedule= lambda epoch: 1e-8 * 10**(epoch/20)  ,verbose=1 )
+        )
 
          
         #self.callbacks.append(
