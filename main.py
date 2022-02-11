@@ -64,7 +64,6 @@ def main(conf_file=0, iter_no=0):
         print("missing or invalid arguments")
         exit(0)
 
-    #  dic for the results of the different models [  model_name: [accuracy_training , predictions_training, accuracy_testing, prediction_testing  ]]
     #[actual , predictions, acc ] 
     res_dec  = {}
     evaluater  = Evaluater( config=config,experiment=experiment)
@@ -217,7 +216,7 @@ def main(conf_file=0, iter_no=0):
 
         print('finish train')
         
-        ensemble_model = True
+        use_residual = True
         single_model = True
 
         if single_model : 
@@ -235,15 +234,15 @@ def main(conf_file=0, iter_no=0):
 
             print('Start prediction (training).')
             predictions=np.zeros(shape=trainy.shape)
-            print('predictions shape',predictions.shape)
-            #predictions= model.predict( [ data_loader.get_train_data()[0][0] , data_loader.get_train_data()[0] [1] , data_loader.get_train_data()[0] [2]]  )
+
+
             for ind in range(trainX[0].shape[0]): #loop all examples 
                 x=[] 
                 for input_item  in trainX: ## for each input kind in the input list 
                     inp_shape= [1]
                     for sh in input_item[ind].shape :
                         inp_shape.append (sh) 
-                    #print('inp_shape:',inp_shape)
+
                     x.append(input_item[ind].reshape(inp_shape) )
             
                 predictions[ind] = model.predict(x)[0,:,0] ##  outputshpe will be [1,27,1]
@@ -279,7 +278,7 @@ def main(conf_file=0, iter_no=0):
                     inp_shape= [1]
                     for sh in input_item[ind].shape :
                         inp_shape.append (sh) 
-                    #print('inp_shape:',inp_shape)
+
                     x.append(input_item[ind].reshape(inp_shape) )
             
                 predictions[ind] = model.predict(x)[0,:,0] ##  outputshpe will be [1,27,1]
@@ -309,35 +308,37 @@ def main(conf_file=0, iter_no=0):
  
             #print(res_dec)
             #exit()
-        if ensemble_model :
+        if use_residual :
             print('start ensemble part ')
             pca_comp = config.model_data.pca_comp
             correction_power_only = config.model_data.correction_power_only  ##use only power to train the residual model 
 
-            ##build ensemble models 
+            ##build predictions processing part 
             gbnn= [] 
             # for n in range(1,ensemble_n ):
-            for n in [1]:
+            for n in [1]: # 1 residual learner used 
+
                 #information for saving results 
                 if config. model_data.descriptive_data:
                     details='_DS_ens_'+str(n) +'_pca_'+str(pca_comp).replace('.','')+'_Pfeat_'+str(config.model_data.use_power)+'_Wfeat_'+str(config.model_data.use_weather)+'_onlyP_'+str(correction_power_only)+windowing
                 else:
                     details='_ens_'+str(n) +'_pca_'+str(pca_comp).replace('.','')+'_Pfeat_'+str(config.model_data.use_power)+'_Wfeat_'+str(config.model_data.use_weather)+'_onlyP_'+str(correction_power_only)+windowing
-                # trainX =  [ data_loader.get_train_data()[0][0] , data_loader.get_train_data()[0] [2]]
+
                 
                 trainX =   data_loader.get_train_data()[0]
                 trainy =  data_loader.get_train_data()[1]
 
-                ensemble_models  =  get_ensemble( trainX, trainy,model = model ,pca_comp=pca_comp, n=n,correction_power_only =correction_power_only )
+
+                prediction_processing  =  get_ensemble( trainX, trainy,model = model ,pca_comp=pca_comp, n=n,correction_power_only =correction_power_only )
                 print('----------------')
-                ensmble_predictions= np.zeros( shape=(len(ensemble_models),data_loader.get_train_data()[1].shape[0], data_loader.get_train_data()[1].shape[1] ))
-                print('ensmble_predictions',ensmble_predictions.shape)
+                final_predictions= np.zeros( shape=(len(prediction_processing),data_loader.get_train_data()[1].shape[0], data_loader.get_train_data()[1].shape[1] ))
+
                 ##Evaluate training data
                 #'''
-                for i , ensemble_model in enumerate(ensemble_models): 
+                for i , _model in enumerate(prediction_processing): 
                     if i ==0 : 
                         continue
-                        #ensmble_predictions[i] = ensemble_model.predict(  trainX)  [:,:,0]
+
                     
                     else:
 
@@ -358,7 +359,7 @@ def main(conf_file=0, iter_no=0):
  
 
                 ##Evaluate testing data
-                ensmble_predictions= np.zeros( shape=(len(ensemble_models),data_loader.get_test_data()[1].shape[0], data_loader.get_test_data()[1].shape[1] ))
+                final_predictions= np.zeros( shape=(len(prediction_processing),data_loader.get_test_data()[1].shape[0], data_loader.get_test_data()[1].shape[1] ))
                  
                 testX =  data_loader.get_test_data()[0] 
                 testy =  data_loader.get_test_data()[1]
@@ -374,24 +375,9 @@ def main(conf_file=0, iter_no=0):
                         #print('inp_shape:',inp_shape)
                         x.append(input_item[test_index].reshape(inp_shape) )
              
-                    for i , ensemble_model in enumerate(ensemble_models): 
+                    for i , _model in enumerate(prediction_processing): 
                         if i ==0 : 
-                            ensmble_predictions[i][test_index] = ensemble_model.predict( x )[:,:,0]
-                        
-                            if 'trend' in config.model_data.stack_types :
-                                temp= partial_model.predict(  x )
-                                temp= temp [0] #forecast_interpret
-                                #temp_back=temp[1] #backcast
-
-                                #print("len temp",len(temp))
-                                if len(interpretable_predictions ) == 0 :
-                                    interpretable_predictions = temp
-                                else: 
-                                    interpretable_predictions = np.concatenate((interpretable_predictions, temp),axis=1)
-                                    
-
-
-                        
+                            final_predictions[i][test_index] = _model.predict( x )[:,:,0]                      
                         else:
                             if correction_power_only: 
                                 testX_2D = x[0] #only power 
@@ -408,10 +394,10 @@ def main(conf_file=0, iter_no=0):
                             if pca_comp>0 :
                                 testX_2D =pca.transform(testX_2D)
 
-                            ensmble_predictions[i][test_index] = ensemble_model.predict( testX_2D)[0]
+                            final_predictions[i][test_index] = _model.predict( testX_2D)[0]
 
             
-                predictions = ensmble_predictions.sum(axis=0)
+                predictions = final_predictions.sum(axis=0)
                 print( 'predictions:',predictions.shape)
 
                 #if data normlized apply the inverse 
