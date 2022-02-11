@@ -111,7 +111,7 @@ def main(conf_file=0, iter_no=0):
     else:
         print('load encoder')
         encoder = keras.models.load_model('encoder_'+config.dataset_file.siteName+'.h5')
-        encoder.compile(optimizer='Nadam', loss='mse')
+        encoder.compile(optimizer='adam', loss='mse')
 
     
     
