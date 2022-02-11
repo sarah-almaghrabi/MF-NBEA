@@ -8,7 +8,7 @@ import tensorflow as tf
 from keras import  Model 
 from tensorflow import keras
 from evaluater.model_evaluater import Evaluater
-from models_grid import MF_NBEA, autoencoder
+from models import MF_NBEA, autoencoder
 from trainers.trainer import Trainer
 import trainers.trainer_autoencoder  
 from utils.config import process_config
