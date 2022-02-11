@@ -25,41 +25,20 @@ class MF_NBEA(BaseModel):
         weather_maps = config.model_data.model_weather_maps
         weather_covariate = config.model_data.model_weather_covariate
         calendar_cov = config.model_data.model_calendar_cov
-        print('model_power_only:',model_power_only)
-        print('weather_maps:',weather_maps)
-        print('weather_covariate:',weather_covariate)
+        
+
         self.experiment = experiment
 
         super(MF_NBEA, self).__init__(config)
-
-        ##Set Tensorflow to grow GPU memory consumption instead of grabbing all of it at once
-        #K.clear_session()
-        #con = tf.compat.v1.ConfigProto(allow_soft_placement=True, log_device_placement=False)
-        #con.gpu_options.allow_growth = True
-        ## tfsess = tf.compat.v1.Session(config=config)
-        #tfsess = tf.compat.v1.keras.backend.set_session(tf.Session(graph=tf.get_default_graph(), config=con))
-
-
-
         self.config = config
         ''' seed setings '''
         # Set seed value
         seed_value = self.config.exp.seed_value
-
         os.environ['PYTHONHASHSEED']=str(seed_value)
-
-        # Set `python` built-in pseudo-random generator at a fixed value
         random.seed(seed_value)
-
-        # Set `numpy` pseudo-random generator at a fixed value
         np.random.seed(seed_value)
-
-        # Set `tensorflow` pseudo-random generator at a fixed value
-        #tf.random.set_seed(seed_value)
         tf.random.set_random_seed(seed_value)
 
-        # self.build_model()
-        from keras import backend as K
         session_conf = tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=1)
         sess = tf.Session(graph=tf.get_default_graph(), config=session_conf)
         K.set_session(sess)
@@ -81,9 +60,8 @@ class MF_NBEA(BaseModel):
             """Reshape the context vectors to 3D vector"""
             return K.reshape(x=data, shape=(K.shape(data)[0], K.shape(data)[1], 1))
 
-        print('units >>>>>>>>>>>>>>>> ',units )
          
-        filters = units #32# hb.Choice(name='filters_c1d' ,values=[32])
+        filters = units 
         kernel_size=5 
         
         
@@ -166,11 +144,12 @@ class MF_NBEA(BaseModel):
 
         # concat_input =Concatenate( ) ([inputs2,inputs1])
 
+        ## Temporal Encoders 
         ## extract features from power series 
         concat_input_ = power #weather #Concatenate( ) ([weather,power])
         random.seed(seed_value)
         seed_value = [random.randrange(1, 9999 ) for i in range(1)][0]
-        concat_input =   Conv1D(filters=filters, kernel_size= kernel_size , padding= "same" ,kernel_initializer=initializers.he_normal(seed=seed_value),  name= 'latent_power_features')(concat_input_) 
+        concat_input =   Conv2D(filters=filters, kernel_size= kernel_size , padding= "same" ,kernel_initializer=initializers.he_normal(seed=seed_value),  name= 'latent_power_features')(concat_input_) 
         concat_input = LeakyReLU()(concat_input)
         concat_input = BatchNormalization() (concat_input)
         ## residual connection for power 
@@ -329,49 +308,7 @@ class MF_NBEA(BaseModel):
         seed_value = seed_value+1
         layer = Dropout(.3, seed = seed_value)(full_inputs )
  
-        # layer = Dense(500, activation='relu' )(layer)
-        # layer = Dropout(.2)(layer)
-        # layer = Dense(100, activation='relu' )(layer)
- 
-
-
-
-
-
-
-
-         
-        #layer = Dense(27  ,kernel_regularizer=l2())(layer)
-
-
-        # layer = Flatten()(contexts)
-        # layer = Dense(43, activation='relu' ,kernel_regularizer=l2(), kernel_constraint=non_neg(), kernel_initializer= custom_weights,name='dense_out')(layer)
-        
-        # kernel_initializer_choise = hb.Choice(name='kernel_inilization_dense' ,values=['glorot_uniform','HeNormal','custom_weights'])
-        kernel_initializer_choise ='HeNormal' #hb.Choice(name='kernel_inilization_dense' ,values=['glorot_uniform','HeNormal'])
-        print('layer >>',layer.get_shape())
-        unit_fc = stepsIn
-        #unit_fc =  pd.read_csv('ridge_coef_lag_'+str(self.config.model_data.window)+'_' +self.config.dataset_file.siteName+'.csv').values.shape[-1]
-        #print("unit_fc: ",unit_fc)
-
-        #random.seed(seed_value)
-        #seed_value = [random.randrange(1, 9999 ) for i in range(1)][0] 
-
-        #if kernel_initializer_choise == 'glorot_uniform' :
-        #    layer = Dense(43  ,kernel_regularizer=l2(),   kernel_initializer=initializers.glorot_uniform() ,name='dense_out')(layer)
-        #    layer = LeakyReLU(alpha=0.2)(layer)
-        #    layer = BatchNormalization()(layer)
-        #elif  kernel_initializer_choise =='HeNormal':
-        #    layer = Dense(64  ,kernel_regularizer=l2(),   kernel_initializer=initializers.HeNormal(seed=seed_value)  ,name='dense_out')(layer)
-        #    layer = LeakyReLU(alpha=0.2)(layer)
-        #    layer = BatchNormalization()(layer)
-
-        #elif kernel_initializer_choise =='custom_weights':
-        #    layer = Dense(unit_fc  ,kernel_regularizer=l2(),  kernel_initializer=custom_weights,name='dense_out')(layer)
-        #    layer = LeakyReLU(alpha=0.2)(layer)
-        #    layer = BatchNormalization()(layer)
-
-
+        unit_fc = stepsIn 
         #to use only power with NBEATS
         if model_power_only:
             exxxo_dim = 0
@@ -593,19 +530,12 @@ class MF_NBEA(BaseModel):
                 d0 = Concatenate()([x[k]] + [e[ll] for ll in range(self.exo_dim)])
             else:
                 d0 = x[k]
-            #d0 =  BatchNormalization()(d0)
             d1_ = d1(d0)
-            #d1_ =  BatchNormalization()(d1_)
             d2_ = d2(d1_)
-            #d2_ =  BatchNormalization()(d2_)
             d3_ = d3(d2_)
-            #d3_ =  BatchNormalization()(d3_)
             d4_ = d4(d3_)
-            #d4_ = BatchNormalization()(d4_)
             theta_f_ = theta_f(d4_)
-            #theta_f_ = BatchNormalization()(theta_f_)
             theta_b_ = theta_b(d4_)
-            #theta_b_  = BatchNormalization()(theta_b_)
             backcast_[k] = backcast(theta_b_)
             forecast_[k] = forecast(theta_f_)
 
