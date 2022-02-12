@@ -22,7 +22,7 @@ class MF_NBEA(BaseModel):
     _FORECAST = 'forecast'
 
 
-    def __init__(self, config , experiment,units ,in_dim,out_dim , nb_blocks_per_stack=1,thetas_dim=4, nbeats_units=128 ,nb_harmonics = 8  ):
+    def __init__(self, config , experiment, nb_blocks_per_stack=1,thetas_dim=4, nbeats_units=128 ,nb_harmonics = 8  ):
         
         self.experiment = experiment
 
@@ -158,7 +158,7 @@ class MF_NBEA(BaseModel):
 
         concat_input  = Concatenate( ) ([concat_input,weather_])
         concat_input = Conv1D(filters=f4,  kernel_size=kernel_size, padding= "same",kernel_initializer=initializers.he_normal( seed=seed_value), name= 'reduce_dim_of_power_wether_maps1')(concat_input) 
-        concat_input = Conv1D(filters=f4//2,  kernel_size=kernel_size, padding= "same",kernel_initializer=initializers.he_normal( seed=seed_value), name= 'reduce_dim_of_power_wether_maps2')(concat_input) 
+        # concat_input = Conv1D(filters=f4//2,  kernel_size=kernel_size, padding= "same",kernel_initializer=initializers.he_normal( seed=seed_value), name= 'reduce_dim_of_power_wether_maps2')(concat_input) 
         power_to_cocat = Flatten()(power)
         power_to_cocat = Reshape( (stepsIn,1)) (power_to_cocat)
         concat_input = Concatenate()([concat_input, power_to_cocat ])
@@ -167,8 +167,8 @@ class MF_NBEA(BaseModel):
         layer = Dropout(.3, seed = seed_value)(concat_input ) 
  
         layer = Flatten()(layer)
-        layer = Dense(stepsIn, activation='relu' ,  kernel_initializer=initializers.HeNormal(seed=seed_value) )(layer)
-        layer = Reshape((stepsIn,1),name= 'input_variable' )(layer)
+        generated_seq = Dense(stepsIn, activation='relu' ,  kernel_initializer=initializers.HeNormal(seed=seed_value) )(layer)
+        generated_seq = Reshape((stepsIn,1),name= 'input_variable' )(generated_seq)
 
         
         '''
@@ -179,9 +179,9 @@ class MF_NBEA(BaseModel):
         self.thetas_dim = tuple( [ thetas_dim for _ in range(len(self.stack_types))]) 
         self.units = nbeats_units
         self.share_weights_in_stack = False  if 'generic' in self.stack_types else True  # share_weights_in_stack
-        self.backcast_length = stepsIn #backcast_length
-        self.forecast_length = stepsOut#forecast_length
-        self.input_dim = layer.get_shape()[-1]# input_dim
+        self.backcast_length = stepsIn  #backcast_length
+        self.forecast_length = stepsOut #forecast_length
+        self.input_dim = generated_seq.get_shape()[-1]# input_dim
         self.input_shape = (self.backcast_length, self.input_dim)
 
         self.exo_dim  = 0 
@@ -192,7 +192,7 @@ class MF_NBEA(BaseModel):
 
         assert len(self.stack_types) == len(self.thetas_dim)
 
-        x = layer #Input(shape=self.input_shape, name='input_variable')
+        x = generated_seq #Input(shape=self.input_shape, name='input_variable')
         x_ = {}
         for k in range(self.input_dim):
             x_[k] = Lambda(lambda z: z[..., k])(x)
@@ -227,7 +227,6 @@ class MF_NBEA(BaseModel):
 
 
         n_beats_forecast = Model([inputs1, inputs2,inputs3,input4], y_, name=self._FORECAST)
-        # n_beats_backcast = Model(x, x_, name=self._BACKCAST)
         n_beats_backcast = Model([inputs1, inputs2,inputs3,input4,x_ ], name=self._BACKCAST)
 
         self.models = {model.name: model for model in [n_beats_backcast, n_beats_forecast]}

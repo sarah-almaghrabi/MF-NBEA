@@ -130,17 +130,17 @@ def main(conf_file=0, iter_no=0):
    
     if( model_name== "MFNBEA"):
         ### hyperparams for optimization 
-        HP_NUM_UNITS = hp.HParam('num_units', hp.Discrete([32]))#, 64]))
-        HP_NUM_IN_DIM = hp.HParam('num_in_dim', hp.Discrete([64]))
-        HP_NUM_OUT_DIM = hp.HParam('num_out_dim', hp.Discrete([32]))
-        HP_BLOCKS_PER_STACK = hp.HParam('nb_blocks_per_stack', hp.Discrete([1]))
-        HP_THETAS_DIM = hp.HParam('thetas_dim', hp.Discrete([3]))
-        HP_NBEATS_UNITS = hp.HParam('nbeats_units', hp.Discrete([128]))
-        HP_NB_HARMONICS = hp.HParam('nb_harmonics', hp.Discrete([8]))
+        # HP_NUM_UNITS = hp.HParam('num_units', hp.Discrete(config.model.seq_anal_units))  #, 64]))
+        # HP_NUM_IN_DIM = hp.HParam('num_in_dim', hp.Discrete([64]))
+        # HP_NUM_OUT_DIM = hp.HParam('num_out_dim', hp.Discrete([32]))
+        HP_BLOCKS_PER_STACK = hp.HParam('nb_blocks_per_stack', hp.Discrete(config.model.seq_anal_bps))
+        HP_THETAS_DIM = hp.HParam('thetas_dim', hp.Discrete(config.model.seq_anal_thetas_dim))
+        HP_NBEATS_UNITS = hp.HParam('nbeats_units', hp.Discrete(config.model.seq_anal_units)))
+        HP_NB_HARMONICS = hp.HParam('nb_harmonics', hp.Discrete(config.model.seq_anal_harmonic))
         HP_DELTA = hp.HParam('delta', hp.RealInterval(1.5,1.55))
         
         METRIC_ACCURACY = 'mse'
-        HPARAMS=[HP_NUM_UNITS,HP_NUM_IN_DIM,HP_NUM_OUT_DIM,HP_BLOCKS_PER_STACK, HP_THETAS_DIM ,HP_NBEATS_UNITS,HP_NB_HARMONICS,HP_DELTA]  
+        HPARAMS=[HP_BLOCKS_PER_STACK, HP_THETAS_DIM ,HP_NBEATS_UNITS,HP_NB_HARMONICS,HP_DELTA]  
        
         log_dir = os.path.normpath( config.callbacks.tensorboard_log_dir)+ 'HyperParams' 
 
@@ -198,9 +198,9 @@ def main(conf_file=0, iter_no=0):
         session_index += 1
         trainer = trainers.trainer.Trainer(
                 model= call_existing_code( 
-                   units=selected_params['num_units'],
-                   in_dim = selected_params['num_in_dim'],
-                   out_dim = selected_params['num_out_dim'] ,
+                #    units=selected_params['num_units'],
+                #    in_dim = selected_params['num_in_dim'],
+                #    out_dim = selected_params['num_out_dim'] ,
                    nb_blocks_per_stack =selected_params['nb_blocks_per_stack'] ,
                    thetas_dim =selected_params['thetas_dim'] ,
                    nbeats_units  =selected_params['nbeats_units'] ,

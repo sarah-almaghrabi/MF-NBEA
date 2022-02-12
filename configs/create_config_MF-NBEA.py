@@ -76,7 +76,13 @@ for stacktypes in ['I']:#,'I']:
                                 "f2": 8, 
                                 "f3":16,
                                 "f4":8,
-                                "kernels":5
+                                "kernels":5,
+                                "seq_anal_units": [128], 
+                                "seq_anal_bps":[2],
+                                "seq_anal_thetas_dim":[3],
+                                "seq_anal_harmonic":[8]
+
+
 
                             },
                             "trainer":{
