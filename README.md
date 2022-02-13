@@ -1,7 +1,7 @@
 # MF-NBEA
 Implementation of Multi-Level Data Fusion and Neural Basis Expansion Analysis for interpretable (MF-NBEA) solar power time series forecasting
 
-MF-NBEA is a an extension of N-BEATS model to a solar power forecasting problem, which is a multivariate context with temporal and spatial characterstics. 
+MF-NBEA is a an extension of the successful N-BEATS model to a solar power forecasting problem, which is a multivariate context with temporal and spatial characterstics. 
 ## Installation
 
 
@@ -15,3 +15,5 @@ To run the code:
 ```
 
 To provide correct data files names, modify  \data_loader\Data_util.py 
+
+
