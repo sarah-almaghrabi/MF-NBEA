@@ -13,8 +13,7 @@ class DataUtil(object):
     # This class contains data specific information.
     def __init__(self, configg,experiment):
             
-        workpath = 'C:/Users/User'
-        #workpath = '/Users/sarahalmaghrabi'
+        workpath = 'C:/ ' 
 
         self.config = configg
         
@@ -49,17 +48,15 @@ class DataUtil(object):
             wanted_features = list(self.config.features) 
             
             optimal_map_size = int(np.ceil(np.sqrt(  self.config.model_data.locations_n)))
-            #print(self.data.shape)
-
+            
             ##np array loads  the weather data as maps for each ts
             weather_data = np.zeros( shape = (int(len(wanted_features)), self.data.shape[0],optimal_map_size,optimal_map_size))
             
-            # weather_data_df = np.zeros(shape=( len(wanted_features), self.data.shape[0],len(wanted_locations)  ))
             weather_data_df = pd.DataFrame()
             for feature_i , feature in enumerate(wanted_features): 
                 
                 ##dir to weather features as covariates for the residual-learner
-                temp  =  pd.read_csv(workpath +'/OneDrive - RMIT University/Data_2019_to_2020/weather_data/solcast/combined_features_from_locations/'+siteName+'/'+feature+'.csv',  index_col=0 , parse_dates=True, dayfirst=True)#, usecols=['PeriodStart','Ghi_'+dataColName])
+                temp = pd.read_csv('path to raw weather data ')
                 #get weather of same time indexes in the pv data 
                 temp = temp.loc[self.data.index , :]
                 # weather_data_df[feature_i]=temp.values
@@ -68,13 +65,13 @@ class DataUtil(object):
 
                 try:
                     ## dir to generated weather maps 
-                    my_file = Path('C:/Users/User/Documents/maps_weather_'+siteName+'.pkl')
+                    my_file = Path('path to generated images of weather data ')
                     if  not my_file.is_file():
 
                         for ts_i, ts in enumerate(self.data.index):
                             ts = str(self.data.index[ts_i]).replace('-',"").replace(':',"")[:-7].replace(' ','_')
-                            #imputed gaps in the maps 
-                            feature_data[ts_i,:]= pd.read_csv("C:/Users/User/Documents/imputed_"+siteName+'/'+feature+'/' +ts+'.csv',index_col=0).values
+
+                            feature_data[ts_i,:]= pd.read_csv("path to generated images of weather data",index_col=0).values
                     else: 
                         continue
 
@@ -156,13 +153,13 @@ class DataUtil(object):
 
             
             # prepare x and y   (PV)
-            self.x_train, self.y_train = self.get_x_y(data =self.series_train  , samplePerDay=self.samplePerDay, lag=self.w , features = 1)
-            self.x_test, self.y_test = self.get_x_y(data =self.series_test  , samplePerDay=self.samplePerDay, lag=self.w , features = 1)
+            self.x_train, self.y_train = self.get_x_y(data =self.series_train  , samplePerDay=self.samplePerDay, horizon = self.h, lag=self.w , features = 1)
+            self.x_test, self.y_test = self.get_x_y(data =self.series_test  , samplePerDay=self.samplePerDay, horizon = self.h,lag=self.w , features = 1)
             
 
             # prepare x and y   (calendar)
-            self.x_train_cal, _ = self.get_x_y(data =self.series_train_calendar  , samplePerDay=self.samplePerDay, lag=self.w , features = 1)
-            self.x_test_cal, _ = self.get_x_y(data =self.series_test_calendar   , samplePerDay=self.samplePerDay, lag=self.w , features = 1)
+            self.x_train_cal, _ = self.get_x_y(data =self.series_train_calendar  , samplePerDay=self.samplePerDay, horizon = self.h,lag=self.w , features = 1)
+            self.x_test_cal, _ = self.get_x_y(data =self.series_test_calendar   , samplePerDay=self.samplePerDay, horizon = self.h,lag=self.w , features = 1)
             
             
             
@@ -243,7 +240,7 @@ class DataUtil(object):
         denormilsed = copy.deepcopy(data)
         return fitted_scalar.inverse_transform(denormilsed)
 
-    def get_x_y(self,data, samplePerDay=1, lag=1 , features = 1):
+    def get_x_y(self,data, samplePerDay=1, lag=1 , horizon = 1 ,features = 1):
         '''
         function to get the x and y samples , this function can work  for univariate and multivariate 
         inputs: 
@@ -255,15 +252,14 @@ class DataUtil(object):
         '''  
         #print(data.shape)
         x = np.zeros( shape= (data.shape[0] - lag , lag , samplePerDay ,features )) 
-        y = np.zeros( shape= (data.shape[0] - lag ,  samplePerDay ))
-        #print(x.shape)
-        #print(y.shape)
+        y = np.zeros( shape= (data.shape[0] - lag ,  horizon,samplePerDay ))
         for i in range(x.shape[0]):
             for j in range(features): 
-                x[i,:,:,j] = data[i:i+lag,:,j]
-                y[i] = data[i+lag , :,-1  ] # labels is the last column in the data 
+                x[i,:,:,j] = data[i:i+lag,:,j] 
+            for h in  range(horizon):   
+                y[i,h] = data[i+lag , :,-1  ] 
 
-
+        y = y.reshape(y.shape[0], y.shape[1]*y.shape[2])
         return x, y 
 
 
