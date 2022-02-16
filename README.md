@@ -11,14 +11,17 @@ the weather information from : https://solcast.com/
 
 
 To run the code: 
-1. Edit  create_config_MF-NBEA.py with required configurations 
-2. Run create_config_MF-NBEA.py  , this will generate jason files of all required configurations to use. All jason files will be saved in \model_configs.
-3. After creating all the configurations you are ready to run the code.. just run the following command:
+
+
+
+
+
+
+1. Edit  \data_loader\Data_util.py to provide correct data files names, 
+2. Edit  create_config_MF-NBEA.py with required configurations 
+3. Run create_config_MF-NBEA.py  , this will generate jason files of all required configurations to use. All jason files will be saved in \model_configs.
+4. After creating all the configurations you are ready to run the code.. just run the following command:
 
 ```bash
   python run.py 
 ```
-
-To provide correct data files names, modify  \data_loader\Data_util.py 
-
-
