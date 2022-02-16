@@ -83,7 +83,7 @@ class MF_NBEA(BaseModel):
             ''' SLIDING WINDOW '''
                     
             stepsIn = self.config.dataset_file.samplePerDay * self.config.model_data.window
-            stepsOut= self.config.dataset_file.samplePerDay
+            stepsOut= self.config.dataset_file.samplePerDay * self.config.model_data.horizon
         
         
             #aggregated pv 
