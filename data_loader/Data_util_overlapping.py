@@ -14,7 +14,6 @@ class DataUtil(object):
     def __init__(self, configg,experiment):
             
         workpath = 'C:/Users/User'
-        #workpath = '/Users/sarahalmaghrabi'
 
         self.config = configg
         # if ( "comet_key" in self.config):
@@ -31,18 +30,9 @@ class DataUtil(object):
             data_dir = 'data/'
             siteName=self.config.dataset_file.siteName
             dataColName=siteName+'(aggregated)'
-            # dataColName= 'GRIFSF1'#'MOREESF1' #'BROKENH1'
-
-            # file = data_dir+'power/' + self.config.dataset_file.file_name
-
             file = data_dir+'power/2019_2020_2021_' + self.config.dataset_file.file_name
-            print(file)
             self.data = pd.read_csv(file,  index_col=0 , parse_dates=True, dayfirst=True,usecols=['Timestamp',dataColName] )
-            print( self.data )
 
-            #####
-            # 
-            # self.data = self.data.loc[:'2019-2-1',: ]
             self.data.index = pd.to_datetime(self.data.index, format = format, utc=True)
 
             ## create calendar features 
@@ -52,69 +42,43 @@ class DataUtil(object):
             calendar_feat['day_of_year'] = self.data.index.day_of_year
             calendar_feat['hour'] = self.data.index.hour
             calendar_feat['minute'] = self.data.index.minute
-            #print(calendar_feat)
-
-            #
-            #####
-            #print( self.data.iloc[27*3:27*5] )
+            
             
             #weather features 
-            wanted_features = list(self.config.features) # [ 'Ghi' , 'CloudOpacity','AirTemp']
-            print('wanted_features len:',len(wanted_features))
-            print('wanted_features :',wanted_features)
+            wanted_features = list(self.config.features)
 
-            wanted_locations = [ 'BERYLSF1', 'BROKENH1','COLEASF1','GRIFSF1','GULLRSF1','MANSLR1','MLSP1','MOREESF1','NYNGAN1','PARSF1','ROYALLA1','WRSF1']
             optimal_map_size = int(np.ceil(np.sqrt(  self.config.model_data.locations_n)))
-            #print(self.data.shape)
+
 
             ##np array loads  the weather data as maps for each ts
             weather_data = np.zeros( shape = (int(len(wanted_features)), self.data.shape[0],optimal_map_size,optimal_map_size))
-            
-            # weather_data_df = np.zeros(shape=( len(wanted_features), self.data.shape[0],len(wanted_locations)  ))
             weather_data_df = pd.DataFrame()
             for feature_i , feature in enumerate(wanted_features): 
 
-                temp  =  pd.read_csv(workpath +'/OneDrive - RMIT University/Data_2019_to_2020/weather_data/solcast/combined_features_from_locations/'+siteName+'/'+feature+'.csv',  index_col=0 , parse_dates=True, dayfirst=True)#, usecols=['PeriodStart','Ghi_'+dataColName])
+                temp  =  pd.read_csv(workpath +'/weather_data/solcast/combined_features_from_locations/'+siteName+'/'+feature+'.csv',  index_col=0 , parse_dates=True, dayfirst=True)
                 #get weather of same time indexes in the pv data 
-                #print(temp)
                 temp = temp.loc[self.data.index , :]
-                # weather_data_df[feature_i]=temp.values
                 weather_data_df = pd.concat( [weather_data_df ,  temp] ,axis=1)
-            # for feature in wanted_locations : 
-            #     weather_data =  pd.read_csv(data_dir    +'/weather_per_location/'+feature+'.csv',  index_col=0 , parse_dates=True, dayfirst=True)#, usecols=['PeriodStart','Ghi_'+dataColName])
-            #     weather_data.index.name='Timestamp'
-
+                
                 feature_data = np.zeros( shape=(self.data.shape[0],optimal_map_size,optimal_map_size))
 
                 try:
-                    #print("inside try ")
          
                     my_file = Path('C:/Users/User/Documents/maps_weather_'+siteName+'.pkl')
                     if  not my_file.is_file():
 
                         for ts_i, ts in enumerate(self.data.index):
                             ts = str(self.data.index[ts_i]).replace('-',"").replace(':',"")[:-7].replace(' ','_')
-                            #print("ts_i:",ts_i)
-                            #imputed gaps in the maps 
-                            #feature_data[ts_i,:]= pd.read_csv(workpath+"/OneDrive - RMIT University/experiments/Multivariate_experiments/"+siteName+'/'+feature+'/' +ts+'.csv',index_col=0).values
                             feature_data[ts_i,:]= pd.read_csv("C:/Users/User/Documents/imputed_"+siteName+'/'+feature+'/' +ts+'.csv',index_col=0).values
                         
-                            #not_imputed 
-                            #feature_data[ts_i,:]= pd.read_csv(workpath+"/OneDrive - RMIT University/experiments/Multivariate_experiments/"+"not_imputed_"+siteName[:-1]+'/'+feature+'/' +ts+'.csv',index_col=0).values
-                            #feature_data[ts_i,:]= pd.read_csv("/OneDrive - RMIT University/experiments/Multivariate_experiments/"+siteName+'/'+feature+'/' +ts+'.csv',index_col=0).values
                     else: 
                         continue
 
                         #print('done')
                 except IOError as err:
                     print('OO')
-                # weather_data.index = self.data .index
-                #print(feature)
-                #print(feature_data.shape)
-                #print(feature_data)
-
+                    
                 weather_data [feature_i ] = copy.deepcopy(feature_data)
-                #print(weather_data.shape)
 
             ##save the created maps for eath ts
             if  not my_file.is_file():
@@ -133,40 +97,17 @@ class DataUtil(object):
 
             weather_data_df = weather_data_df.values
 
-
-            # cols = np.array(self.data.columns[:-1].values)
-            # cols = cols.reshape(  cols.shape[0]//len(wanted_features),len(wanted_features) )
-            # print(cols)
-            # print(cols.shape)
-
-            #print(self.data.columns)
-            #print(self.data)
-
-
-           
             self.n_features = len(wanted_features)+1  #weather+pv 
 
             #change power data shape into 3D shape days, steps , 1
             self.series = self.data.values
-            #calendar_feat = calendar_feat.reshape( (   calendar_feat.shape[0]// self.samplePerDay,  self.samplePerDay, calendar_feat.shape[-1]  ))
-            ## for map representaion of weather data : n_features, timesteps (samplePerDay*lags) , 4,4 
-            #weather_data = weather_data.reshape( ( len(wanted_features), weather_data.shape[1]// self.samplePerDay,  self.samplePerDay, weather_data.shape[-2],weather_data.shape[-1] ))
-            ## table representaion of weather data 
-            #weather_data_df = weather_data_df.reshape(     weather_data_df.shape[0]// self.samplePerDay, self.samplePerDay,weather_data_df.shape[-1]   )
             
-            print('power data:',self.data.shape)
-            print('calendar_feat:',calendar_feat.shape)
-            print('weather_data data:',weather_data.shape)
-            print('weather_data_df :',weather_data_df.shape)
             
             
                
             #split 
             splitindex = 365*self.samplePerDay *2
-            # splitindex = 20*self.samplePerDay #*2
-            print('splitindex',splitindex)
-            print('splitindex - self.w',splitindex - self.w)
-            print('splitindex + self.w',splitindex + self.w)
+
             self.series_train,self.series_test = self.series[ : splitindex + self.w, : ] ,  self.series [ splitindex - self.w :,: ] 
             self.series_train_calendar,self.series_test_calendar =   calendar_feat  [ : splitindex + self.w, : ] , calendar_feat [ splitindex - self.w :,: ]
             
@@ -177,17 +118,7 @@ class DataUtil(object):
             
 
             self.maxCapacity = self.series_train[:,-1].max() 
-            print('series_train',self.series_train.shape)
-            print('series_test',self.series_test.shape)
-            print('series_train_calendar',self.series_train_exo_map.shape)
-            print('series_train_maps',self.series_test_exo_map.shape)
-            print('series_train_df',self.series_train_exo_df.shape)
-
-
-
-
-
-
+            
 
             # use list of scalars, more convinent in the case of multiple features 
             self.scalars  = None
@@ -195,11 +126,9 @@ class DataUtil(object):
                 for col in range(self.series_train.shape[-1]): #for each feature 
                     #scale training data
                     # scalar_=None
-                    # self.series_train[:-self.w ,:,col] , scalar_ =  self.normilze_data(data = self.series_train[:-self.w ,:,col]  )
                     self.series_train[: ,col] , scalar_ =  self.normilze_data(data = self.series_train[: ,col]  )
                     self.scalars =  scalar_
                     #scale testing data 
-                    # self.series_test[self.w :,:,col] , _ =  self.normilze_data(data =self.series_test[self.w :,:,col] , fitted_scalar=scalar_ )
                     self.series_test[ :,col] , _ =  self.normilze_data(data =self.series_test[ :,col] , fitted_scalar=scalar_ )
                 print('data are normalized ')
 
@@ -241,10 +170,6 @@ class DataUtil(object):
 
             print('self.x_train_exo_df:',self.x_train_exo_df.shape)
             print('self.x_test_exo_df:',self.x_test_exo_df.shape)
-
-
-            # actual = denormilse_data (data=y_test, fitted_scalar=scalars[-1])
-
 
             
             
